@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Pads ao Vivo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pads">
+<meta name="theme-color" content="#0f0c28">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root{--bg:#0f0c28;--panel:#1a1545;--panel2:#241d5c;--ink:#eef0ff;--mute:#8f93c9;--on:#37e6c4;--acc:#7a8cff;--warn:#ff6b8b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;overflow:hidden;touch-action:manipulation}
+#app{height:100%;display:flex;flex-direction:column;padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));gap:8px}
+#start{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px}
+#start h1{margin:0;font-size:26px}#start p{margin:0;color:var(--mute);max-width:420px;font-size:15px;line-height:1.4}
+#start button{font-size:20px;padding:16px 38px;border-radius:16px;border:0;background:var(--on);color:#052a24;font-weight:700}
+#prog{width:min(360px,80vw);height:8px;background:var(--panel2);border-radius:6px;overflow:hidden}#prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+header{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.tone{display:flex;align-items:center;gap:8px;background:var(--panel);border-radius:14px;padding:6px 8px}
+.tone button{width:52px;height:46px;border-radius:10px;border:0;background:var(--panel2);color:var(--ink);font-size:24px}
+.tone button:active{background:var(--acc)}
+.tone .n{min-width:92px;text-align:center}.tone .n small{display:block;color:var(--mute);font-size:10px;letter-spacing:.12em}.tone .n b{font-size:28px}
+.vol{flex:1;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--mute);letter-spacing:.1em}
+input[type=range]{width:100%;height:34px;accent-color:var(--on)}
+.stop{height:46px;padding:0 14px;border-radius:12px;border:0;background:var(--warn);color:#2a0710;font-weight:700;font-size:13px}
+.cfg{width:46px;height:46px;border-radius:12px;border:0;background:var(--panel);color:var(--ink);font-size:20px}
+main{flex:1;min-height:0;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
+@media (orientation:portrait){main{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}.lbl{font-size:8px;letter-spacing:.04em}.ch .nm{font-size:10px}.vol{min-width:0;flex:1 1 40px}header{gap:5px}.tone{gap:4px;padding:4px}.tone .n{min-width:52px}.tone .n b{font-size:22px}.tone button{width:38px}.stop{padding:0 8px;font-size:11px}.cfg{width:38px}}
+@media (max-height:430px){.knob{width:50px}.ch{gap:3px;padding:6px 4px}.ch .nm{min-height:22px}.tone button,.stop,.cfg{height:40px}.cfg{width:40px}input[type=range]{height:26px}.tg{height:38px}.fader{min-height:70px}}
+.ch{overflow:hidden;background:var(--panel);border-radius:16px;display:flex;flex-direction:column;align-items:center;padding:8px 4px;gap:6px;min-height:0;border:2px solid transparent}
+.ch.on{border-color:var(--on);box-shadow:0 0 18px #37e6c433}
+.ch .nm{font-size:11px;font-weight:700;letter-spacing:.06em;text-align:center;line-height:1.1;min-height:24px;color:var(--ink)}
+.ch .num{font-size:10px;color:var(--mute)}
+.knob{position:relative;width:min(64px,100%);aspect-ratio:1;touch-action:none;flex:0 0 auto}
+.knob svg{width:100%;height:100%}
+.knob .v{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;pointer-events:none}
+.lbl{font-size:9px;color:var(--mute);letter-spacing:.12em}
+.fader{flex:1;min-height:60px;width:100%;display:flex;flex-direction:column;align-items:center;gap:2px}
+.track{position:relative;flex:1;width:44px;touch-action:none;background:var(--panel2);border-radius:12px}
+.track:before{content:"";position:absolute;left:50%;top:10px;bottom:10px;width:4px;margin-left:-2px;background:#0f0c28;border-radius:3px}
+.track .mid{position:absolute;left:8px;right:8px;top:50%;height:2px;background:#5a5fa8;margin-top:-1px}
+.track .th{position:absolute;left:3px;right:3px;height:22px;margin-top:-11px;border-radius:8px;background:var(--acc)}
+.fader .pv{font-size:12px;font-weight:700;min-height:15px}
+.tg{width:100%;height:42px;border-radius:12px;border:0;background:var(--panel2);color:var(--mute);font-weight:800;font-size:13px;flex:0 0 auto}
+.ch.on .tg{background:var(--on);color:#052a24}
+.snd{width:100%;border:0;background:none;color:var(--mute);font-size:10px;text-decoration:underline;padding:2px;flex:0 0 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#modal{position:fixed;inset:0;background:#000a;z-index:40;display:none;align-items:center;justify-content:center;padding:16px}
+#modal.show{display:flex}
+#box{background:var(--panel);border-radius:18px;width:min(520px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden}
+#box h2{margin:0;padding:14px 16px;font-size:16px;border-bottom:1px solid var(--panel2);display:flex;justify-content:space-between;align-items:center}
+#list{overflow:auto;padding:6px}
+.row{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px}
+.row.sel{background:var(--panel2)}
+.row .t{flex:1;font-size:14px}.row .t small{display:block;color:var(--mute);font-size:11px}
+.row button{border:0;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700}
+.row .pv{background:var(--panel2);color:var(--ink)}.row .use{background:var(--acc);color:#0a0d33}
+.x{border:0;background:var(--panel2);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:14px}
+#toast{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;z-index:60;display:none;max-width:90vw;text-align:center}
+</style>
+</head>
+<body>
+<div id="start">
+  <h1>Pads ao Vivo</h1>
+  <p id="msg">Toque em Começar para carregar os sons. Na primeira vez precisa de internet; depois funciona sem.</p>
+  <div id="prog"><i></i></div>
+  <button id="go">Começar</button>
+</div>
+<div id="app">
+  <header>
+    <div class="tone"><button id="dn" aria-label="Tom abaixo">◀</button><div class="n"><small>TOM</small><b id="tn">Dó</b></div><button id="up" aria-label="Tom acima">▶</button></div>
+    <div class="vol"><span>VOLUME GERAL</span><input type="range" id="mv" min="0" max="100" value="80"></div>
+    <button class="stop" id="stop">PARAR<br>TUDO</button>
+    <button class="cfg" id="reset" title="Zerar altura">⟲</button>
+  </header>
+  <main id="grid"></main>
+</div>
+<div id="modal"><div id="box"><h2><span id="mt">Trocar som</span><button class="x" id="mx">Fechar</button></h2><div id="list"></div></div></div>
+<div id="toast"></div>
+<script>
+"use strict";
+var LAYERS=["Atmos Shimmer","Guitar Shimmer","Trinado Pad","Águas FX","Flauta Pad","Guitar FX","Warm Pad","Ventos FX"];
+var DEFAULTS=["A09","A11","B08","C_FB_Tierra_del_Fuego-60-C3-RLGJ","B06","A10","A19","C_Saltbek_Strand-48-C2-JX3S"];
+var NOTES=["Dó","Dó#","Ré","Ré#","Mi","Fá","Fá#","Sol","Sol#","Lá","Lá#","Si"];
+var FADE_IN=0.9, FADE_OUT=1.6;
+var ctx=null, master=null, comp=null, sounds=[], byId={}, bufs={}, S=null, started=false;
+var layers=[]; // runtime
+function $(id){return document.getElementById(id)}
+function toast(t,ms){var e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(function(){e.style.display="none"},ms||2500)}
+function load(){try{S=JSON.parse(localStorage.getItem("padsState")||"null")}catch(e){S=null}
+  if(!S||!S.l||S.l.length!==8){S={tone:0,mv:80,l:LAYERS.map(function(_,i){return{snd:DEFAULTS[i],ct:75,pitch:0}})}}}
+function save(){try{localStorage.setItem("padsState",JSON.stringify(S))}catch(e){}}
+function toneShift(n){return n<=5?n:n-12} // mais proximo de Do: -6..+5 semitons
+/* ---------- audio ---------- */
+function initAudio(){
+  var AC=window.AudioContext||window.webkitAudioContext; ctx=new AC({latencyHint:"playback"});
+  master=ctx.createGain(); comp=ctx.createDynamicsCompressor();
+  comp.threshold.value=-4;comp.knee.value=6;comp.ratio.value=14;comp.attack.value=0.003;comp.release.value=0.25;
+  master.connect(comp);comp.connect(ctx.destination); setMaster();
+  try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
+  // faixa silenciosa em <audio>: faz o iPhone tocar mesmo com a chave de silencioso ligada
+  try{var a=document.createElement("audio");a.loop=true;a.setAttribute("playsinline","");
+    a.src="data:audio/wav;base64,UklGRmQfAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YUAfAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";a.volume=0.01;a.play().catch(function(){});window.__sil=a}catch(e){}
+}
+function setMaster(){var v=Math.pow(S.mv/100,2)*0.7;master.gain.setTargetAtTime(v,ctx.currentTime,0.03)}
+function getBuf(id){
+  if(bufs[id])return Promise.resolve(bufs[id]);
+  var m=byId[id];return fetch(m.file).then(function(r){if(!r.ok)throw new Error("http "+r.status);return r.arrayBuffer()}).then(function(ab){
+    return new Promise(function(res,rej){ctx.decodeAudioData(ab,res,rej)})}).then(function(b){bufs[id]=b;return b});
+}
+function layerGain(L){var m=byId[S.l[L.i].snd];var ct=S.l[L.i].ct/100;return (m?m.gain:1)*Math.pow(ct,1.6)}
+function semis(L){return toneShift(S.tone)+S.l[L.i].pitch}
+function applyPitch(L){if(L.src)L.src.detune.setTargetAtTime(semis(L)*100,ctx.currentTime,0.05)}
+function applyGain(L){if(L.g&&L.on)L.g.gain.setTargetAtTime(layerGain(L),ctx.currentTime,0.06)}
+function startLayer(L){
+  var id=S.l[L.i].snd;L.on=true;render(L);
+  getBuf(id).then(function(b){
+    if(!L.on)return; if(L.src)killSrc(L,0.05);
+    var s=ctx.createBufferSource();s.buffer=b;s.loop=true;s.detune.value=semis(L)*100;
+    var g=ctx.createGain();g.gain.value=0;s.connect(g);g.connect(master);s.start();
+    g.gain.setTargetAtTime(layerGain(L),ctx.currentTime,FADE_IN/3);
+    L.src=s;L.g=g;L.loaded=id;
+  }).catch(function(e){L.on=false;render(L);toast("Erro ao carregar o som: "+e.message)});
+}
+function killSrc(L,t){var s=L.src,g=L.g;L.src=null;L.g=null;if(!s)return;
+  g.gain.cancelScheduledValues(ctx.currentTime);g.gain.setTargetAtTime(0,ctx.currentTime,t/3);
+  setTimeout(function(){try{s.stop();s.disconnect();g.disconnect()}catch(e){}},t*1000+200)}
+function stopLayer(L){L.on=false;render(L);killSrc(L,FADE_OUT)}
+function toggle(L){if(L.on)stopLayer(L);else startLayer(L)}
+/* ---------- interface ---------- */
+function knobSvg(){return '<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="#241d5c"/><path class="trk" d="" stroke="#0f0c28" stroke-width="6" fill="none" stroke-linecap="round"/><path class="val" d="" stroke="#37e6c4" stroke-width="6" fill="none" stroke-linecap="round"/></svg>'}
+function arc(a0,a1){function p(a){var r=a*Math.PI/180;return[32+26*Math.sin(r),32-26*Math.cos(r)]}
+  var s=p(a0),e=p(a1);return "M"+s[0].toFixed(2)+" "+s[1].toFixed(2)+" A26 26 0 "+((a1-a0)>180?1:0)+" 1 "+e[0].toFixed(2)+" "+e[1].toFixed(2)}
+function render(L){
+  var st=S.l[L.i];L.el.classList.toggle("on",L.on);L.tg.textContent=L.on?"LIGADO":"LIGAR";
+  var a=-135+270*st.ct/100;L.kv.setAttribute("d",st.ct>0?arc(-135,a):"");L.kt.setAttribute("d",arc(-135,135));L.kn.textContent=st.ct;
+  var p=st.pitch;L.th.style.top=(50-(p/12)*44)+"%";L.pv.textContent=(p>0?"+":"")+p+" st";
+  var m=byId[st.snd];L.sn.textContent=m?m.label:st.snd;
+  $("tn").textContent=NOTES[S.tone];
+}
+function build(){
+  var g=$("grid");g.innerHTML="";layers=[];
+  LAYERS.forEach(function(name,i){
+    var L={i:i,on:false,src:null,g:null};
+    var el=document.createElement("div");el.className="ch";
+    el.innerHTML='<div class="num">'+(i+1)+'</div><div class="nm">'+name.toUpperCase()+'</div>'+
+      '<div class="knob"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="#241d5c"/><path class="trk" stroke="#0f0c28" stroke-width="6" fill="none" stroke-linecap="round"/><path class="val" stroke="#37e6c4" stroke-width="6" fill="none" stroke-linecap="round"/></svg><div class="v kn"></div></div>'+
+      '<div class="lbl">INTENSIDADE</div>'+
+      '<div class="fader"><div class="track"><div class="mid"></div><div class="th"></div></div><div class="pv"></div><div class="lbl">ALTURA</div></div>'+
+      '<button class="tg"></button><button class="snd"></button>';
+    g.appendChild(el);L.el=el;L.tg=el.querySelector(".tg");L.kv=el.querySelector(".val");L.kt=el.querySelector(".trk");L.kn=el.querySelector(".kn");
+    L.th=el.querySelector(".th");L.pv=el.querySelector(".fader .pv");L.sn=el.querySelector(".snd");
+    L.tg.addEventListener("click",function(){toggle(L)});
+    L.sn.addEventListener("click",function(){openPicker(L)});
+    drag(el.querySelector(".knob"),function(dy){var v=Math.max(0,Math.min(100,L.s0-dy*0.6));S.l[i].ct=Math.round(v);render(L);applyGain(L)},function(){L.s0=S.l[i].ct},save);
+    var tr=el.querySelector(".track");
+    function setP(e){var r=tr.getBoundingClientRect();var f=(e.clientY-r.top-12)/(r.height-24);f=Math.max(0,Math.min(1,f));
+      var p=Math.round((0.5-f)*24);if(Math.abs(p)<1)p=0;S.l[i].pitch=p;render(L);applyPitch(L)}
+    tr.addEventListener("pointerdown",function(e){tr.setPointerCapture(e.pointerId);setP(e);tr._d=true});
+    tr.addEventListener("pointermove",function(e){if(tr._d)setP(e)});
+    tr.addEventListener("pointerup",function(){tr._d=false;save()});tr.addEventListener("pointercancel",function(){tr._d=false});
+    tr.addEventListener("dblclick",function(){S.l[i].pitch=0;render(L);applyPitch(L);save()});
+    layers.push(L);render(L);
+  });
+}
+function drag(el,mv,st,en){var y0=0,d=false;
+  el.addEventListener("pointerdown",function(e){el.setPointerCapture(e.pointerId);d=true;y0=e.clientY;st()});
+  el.addEventListener("pointermove",function(e){if(d)mv(e.clientY-y0)});
+  el.addEventListener("pointerup",function(){d=false;en()});el.addEventListener("pointercancel",function(){d=false});}
+function setTone(n){S.tone=(n+12)%12;layers.forEach(function(L){applyPitch(L);render(L)});save()}
+/* ---------- trocar som ---------- */
+var pvSrc=null;
+function stopPv(){if(pvSrc){try{pvSrc.stop()}catch(e){}pvSrc=null}}
+function openPicker(L){
+  var list=$("list");list.innerHTML="";$("mt").textContent="Som da camada "+(L.i+1)+" · "+LAYERS[L.i];
+  sounds.forEach(function(m){
+    var r=document.createElement("div");r.className="row"+(S.l[L.i].snd===m.id?" sel":"");
+    r.innerHTML='<div class="t">'+m.label+'<small>'+m.dur+' s · '+Math.round(m.sr/100)/10+' kHz · '+m.ch+'ch · nota '+m.root+'</small></div><button class="pv">Ouvir</button><button class="use">Usar</button>';
+    r.querySelector(".pv").addEventListener("click",function(e){var b=e.currentTarget;
+      if(pvSrc){stopPv();b.textContent="Ouvir";return}
+      b.textContent="...";getBuf(m.id).then(function(buf){stopPv();var s=ctx.createBufferSource();s.buffer=buf;var g=ctx.createGain();g.gain.value=Math.min(m.gain,3)*0.6;s.connect(g);g.connect(master);s.start();pvSrc=s;b.textContent="Parar";
+        s.onended=function(){if(pvSrc===s){pvSrc=null;b.textContent="Ouvir"}}}).catch(function(){b.textContent="Ouvir"})});
+    r.querySelector(".use").addEventListener("click",function(){
+      stopPv();S.l[L.i].snd=m.id;save();var was=L.on;render(L);$("modal").classList.remove("show");
+      if(was){L.on=false;killSrc(L,0.4);startLayer(L)}});
+    list.appendChild(r)});
+  $("modal").classList.add("show");
+}
+$("mx").addEventListener("click",function(){stopPv();$("modal").classList.remove("show")});
+/* ---------- partida ---------- */
+function wake(){try{if(navigator.wakeLock){navigator.wakeLock.request("screen").catch(function(){})}}catch(e){}}
+document.addEventListener("visibilitychange",function(){if(!document.hidden){wake();if(ctx&&ctx.state!=="running")ctx.resume()}});
+$("dn").addEventListener("click",function(){setTone(S.tone-1)});
+$("up").addEventListener("click",function(){setTone(S.tone+1)});
+$("mv").addEventListener("input",function(e){S.mv=+e.target.value;if(master)setMaster()});
+$("mv").addEventListener("change",save);
+$("stop").addEventListener("click",function(){layers.forEach(function(L){if(L.on)stopLayer(L)})});
+$("reset").addEventListener("click",function(){S.l.forEach(function(x){x.pitch=0});layers.forEach(function(L){applyPitch(L);render(L)});save();toast("Altura de todas as camadas zerada")});
+$("go").addEventListener("click",function(){
+  if(started)return;started=true;$("go").disabled=true;$("go").textContent="Carregando...";
+  initAudio();ctx.resume();wake();
+  var need=[];S.l.forEach(function(x){if(need.indexOf(x.snd)<0)need.push(x.snd)});
+  var done=0;Promise.all(need.map(function(id){return getBuf(id).then(function(){done++;$("prog").firstChild.style.width=(done/need.length*100)+"%"})}))
+   .then(function(){$("start").style.display="none"})
+   .catch(function(e){started=false;$("go").disabled=false;$("go").textContent="Tentar de novo";$("msg").textContent="Não consegui carregar os sons ("+e.message+"). Confira a internet e tente de novo."});
+});
+fetch("sounds.json").then(function(r){return r.json()}).then(function(j){
+  sounds=j;j.forEach(function(m){byId[m.id]=m});load();
+  S.l.forEach(function(x){if(!byId[x.snd])x.snd=DEFAULTS[S.l.indexOf(x)]});
+  S.tone=S.tone||0;$("mv").value=S.mv;build();
+  $("go").disabled=false;
+}).catch(function(e){$("msg").textContent="Não consegui abrir a lista de sons: "+e.message});
+$("go").disabled=true;
+try{if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){})}catch(e){}
+window.__pads={get ctx(){return ctx},layers:function(){return layers},S:function(){return S},toggle:function(i){toggle(layers[i])},setTone:setTone};
+</script>
+</body>
+</html>
