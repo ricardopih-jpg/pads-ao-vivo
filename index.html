@@ -29,10 +29,19 @@ header{display:flex;align-items:center;gap:10px;flex:0 0 auto}
 input[type=range]{width:100%;height:34px;accent-color:var(--on)}
 .stop{height:46px;padding:0 14px;border-radius:12px;border:0;background:var(--warn);color:#fff;font-weight:700;font-size:13px}
 .cfg{width:46px;height:46px;border-radius:12px;border:0;background:var(--panel);color:var(--ink);font-size:20px}
-main{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+main{flex:1;min-height:0;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
 @media (orientation:portrait){main{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}.lbl{font-size:7px;letter-spacing:.04em}.ch .nm{font-size:10px}.vol{min-width:0;flex:1 1 40px}header{gap:5px}.tone{gap:4px;padding:4px}.tone .n{min-width:52px}.tone .n b{font-size:22px}.tone button{width:38px}.stop{padding:0 8px;font-size:11px}.cfg{width:38px}}
 @media (max-height:430px){.ch{gap:2px;padding:6px 4px}.tone button,.stop,.cfg{height:40px}.cfg{width:40px}input[type=range]{height:26px}.tg{height:32px}.ch .nm{min-height:22px;font-size:10px}.knob .v{font-size:12px}}
 .sig{flex:0 0 auto;text-align:center;font-size:10px;font-weight:500;letter-spacing:.18em;color:#6e6e73;text-transform:none;padding:1px 0 0}
+.ch.master{background:linear-gradient(180deg,#ececf0,#c3c3c8);border-color:#f5f5f7;box-shadow:inset 0 1px 0 #fff,0 0 0 1px #00000040}
+.ch.master .nm,.ch.master .num,.ch.master .mv{color:#111}
+.mtrack{position:relative;flex:1;min-height:60px;width:100%;touch-action:none;display:flex;justify-content:center;margin:4px 0}
+.mtrack:before{content:"";position:absolute;top:8px;bottom:8px;left:50%;width:8px;margin-left:-4px;border-radius:4px;background:#9a9aa0}
+.mtrack .fill{position:absolute;bottom:8px;left:50%;width:8px;margin-left:-4px;border-radius:4px;background:#111}
+.mtrack .th{position:absolute;left:50%;width:64%;max-width:58px;height:26px;margin-left:calc(-32%);transform:translateY(50%);border-radius:8px;background:linear-gradient(#3a3a3d,#0c0c0e);box-shadow:0 2px 5px #0006}
+.mtrack .th:after{content:"";position:absolute;left:18%;right:18%;top:50%;height:2px;margin-top:-1px;background:#d1d1d6;border-radius:1px}
+.ch.master .mv{font-size:13px;font-weight:700;min-height:16px}
+.ch.master .lbl{color:#444}
 .ch{overflow:hidden;background:linear-gradient(180deg,#2a2a2d,#1d1d1f);border-radius:14px;display:flex;flex-direction:column;align-items:center;padding:8px 4px;gap:3px;min-height:0;border:1px solid #38383b;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 .ch.on{border-color:#d1d1d699;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px #d1d1d633,0 0 18px #d1d1d622}
 .ch .nm{font-size:11px;font-weight:700;letter-spacing:.04em;text-align:center;line-height:1.1;min-height:26px;display:flex;align-items:center;color:var(--ink)}
@@ -70,7 +79,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1f
 <div id="app">
   <header>
     <div class="tone"><button id="dn" aria-label="Tom abaixo">◀</button><div class="n"><small>TOM</small><b id="tn">Dó</b></div><button id="up" aria-label="Tom acima">▶</button></div>
-    <div class="vol"><span>VOLUME GERAL</span><input type="range" id="mv" min="0" max="100" value="80"></div>
+    <div style="flex:1"></div>
     <button class="stop" id="stop">PARAR<br>TUDO</button>
     <button class="cfg" id="reset" title="Zerar brilho">⟲</button>
   </header>
@@ -110,26 +119,39 @@ function getBuf(id){
   var m=byId[id];return fetch(m.file).then(function(r){if(!r.ok)throw new Error("http "+r.status);return r.arrayBuffer()}).then(function(ab){
     return new Promise(function(res,rej){ctx.decodeAudioData(ab,res,rej)})}).then(function(b){bufs[id]=b;return b});
 }
+var loopCache={};
+function loopBuf(id,b){
+  if(loopCache[id])return loopCache[id];
+  var sr=b.sampleRate,len=b.length,F=Math.min(Math.round(6*sr),Math.floor(len*0.3));
+  if(F<sr){loopCache[id]=b;return b}
+  var n=len-F,out=ctx.createBuffer(b.numberOfChannels,n,sr);
+  for(var c=0;c<b.numberOfChannels;c++){var x=b.getChannelData(c),y=out.getChannelData(c);
+    y.set(x.subarray(0,n));
+    for(var i=0;i<F;i++){var t=i/F,wi=Math.sin(t*Math.PI/2),wo=Math.cos(t*Math.PI/2);y[i]=x[i]*wi+x[n+i]*wo}}
+  loopCache[id]=out;return out}
 function layerGain(L){var m=byId[S.l[L.i].snd];var ct=S.l[L.i].ct/100;return (m?m.gain:1)*Math.pow(ct,1.6)}
 function semis(L){return toneShift(S.tone)}
-function brDb(L){return (S.l[L.i].br-50)/50*12}
-function applyBr(L){if(L.f)L.f.gain.setTargetAtTime(brDb(L),ctx.currentTime,0.05)}
+function brDb(L){var b=S.l[L.i].br;return b>=50?(b-50)/50*12:-(50-b)/50*12}
+function brLp(L){var b=S.l[L.i].br;return b>=50?20000:20000*Math.pow(300/20000,Math.pow((50-b)/50,0.6))}
+function applyBr(L){if(L.f){L.f.gain.setTargetAtTime(brDb(L),ctx.currentTime,0.05);var fq=brLp(L);L.lp.frequency.setTargetAtTime(fq,ctx.currentTime,0.05);L.lp2.frequency.setTargetAtTime(fq,ctx.currentTime,0.05)}}
 function applyPitch(L){if(L.src)L.src.detune.setTargetAtTime(semis(L)*100,ctx.currentTime,0.05)}
 function applyGain(L){if(L.g&&L.on)L.g.gain.setTargetAtTime(layerGain(L),ctx.currentTime,0.06)}
 function startLayer(L){
   var id=S.l[L.i].snd;L.on=true;render(L);
   getBuf(id).then(function(b){
     if(!L.on)return; if(L.src)killSrc(L,0.05);
-    var s=ctx.createBufferSource();s.buffer=b;s.loop=true;s.detune.value=semis(L)*100;
+    var s=ctx.createBufferSource();s.buffer=loopBuf(id,b);s.loop=true;s.detune.value=semis(L)*100;
     var f=ctx.createBiquadFilter();f.type="highshelf";f.frequency.value=2500;f.gain.value=brDb(L);
-    var g=ctx.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(master);s.start();
+    var lp=ctx.createBiquadFilter();lp.type="lowpass";lp.Q.value=0.6;lp.frequency.value=brLp(L);
+    var lp2=ctx.createBiquadFilter();lp2.type="lowpass";lp2.Q.value=0.6;lp2.frequency.value=brLp(L);
+    var g=ctx.createGain();g.gain.value=0;s.connect(lp);lp.connect(lp2);lp2.connect(f);f.connect(g);g.connect(master);s.start();
     g.gain.setTargetAtTime(layerGain(L),ctx.currentTime,FADE_IN/3);
-    L.src=s;L.g=g;L.f=f;L.loaded=id;
+    L.src=s;L.g=g;L.f=f;L.lp=lp;L.lp2=lp2;L.loaded=id;
   }).catch(function(e){L.on=false;render(L);toast("Erro ao carregar o som: "+e.message)});
 }
-function killSrc(L,t){var s=L.src,g=L.g,f=L.f;L.src=null;L.g=null;L.f=null;if(!s)return;
+function killSrc(L,t){var s=L.src,g=L.g,f=L.f,lp=L.lp,lp2=L.lp2;L.src=null;L.g=null;L.f=null;L.lp=null;L.lp2=null;if(!s)return;
   g.gain.cancelScheduledValues(ctx.currentTime);g.gain.setTargetAtTime(0,ctx.currentTime,t/3);
-  setTimeout(function(){try{s.stop();s.disconnect();if(f)f.disconnect();g.disconnect()}catch(e){}},t*1000+200)}
+  setTimeout(function(){try{s.stop();s.disconnect();if(lp)lp.disconnect();if(lp2)lp2.disconnect();if(f)f.disconnect();g.disconnect()}catch(e){}},t*1000+200)}
 function stopLayer(L){L.on=false;render(L);killSrc(L,FADE_OUT)}
 function toggle(L){if(L.on)stopLayer(L);else startLayer(L)}
 /* ---------- interface ---------- */
@@ -147,7 +169,7 @@ function render(L){
 function build(){
   var g=$("grid");g.innerHTML="";layers=[];
   LAYERS.forEach(function(name,i){
-    var L={i:i,on:false,src:null,g:null,f:null};
+    var L={i:i,on:false,src:null,g:null,f:null,lp:null,lp2:null};
     var el=document.createElement("div");el.className="ch";
     el.innerHTML='<div class="num">'+(i+1)+'</div><div class="nm">'+name.toUpperCase()+'</div>'+knobHtml("k1","INTENSIDADE")+knobHtml("k2","BRILHO")+
       '<button class="tg"></button><button class="snd"></button>';
@@ -159,6 +181,15 @@ function build(){
     L.k2.addEventListener("dblclick",function(){S.l[i].br=50;render(L);applyBr(L);save()});
     layers.push(L);render(L);
   });
+  var m=document.createElement("div");m.className="ch master";
+  m.innerHTML='<div class="num">M</div><div class="nm">VOLUME GERAL</div><div class="mtrack"><div class="fill"></div><div class="th"></div></div><div class="mv"></div><div class="lbl">MASTER</div><div style="height:38px"></div><div class="snd">&nbsp;</div>';
+  g.appendChild(m);var tr=m.querySelector(".mtrack"),fl=m.querySelector(".fill"),th=m.querySelector(".th"),mv=m.querySelector(".mv");
+  function paint(){var r=tr.clientHeight-16;var y=8+r*(S.mv/100);fl.style.height=(r*(S.mv/100))+"px";th.style.bottom=(y)+"px";mv.textContent=S.mv}
+  function setM(e){var r=tr.getBoundingClientRect();var f=1-(e.clientY-r.top-8)/(r.height-16);f=Math.max(0,Math.min(1,f));S.mv=Math.round(f*100);paint();if(master)setMaster()}
+  tr.addEventListener("pointerdown",function(e){tr.setPointerCapture(e.pointerId);tr._d=true;setM(e)});
+  tr.addEventListener("pointermove",function(e){if(tr._d)setM(e)});
+  tr.addEventListener("pointerup",function(){tr._d=false;save()});tr.addEventListener("pointercancel",function(){tr._d=false});
+  paint();window.addEventListener("resize",paint);setTimeout(paint,50);
 }
 function drag(el,mv,st,en){var y0=0,d=false;
   el.addEventListener("pointerdown",function(e){el.setPointerCapture(e.pointerId);d=true;y0=e.clientY;st()});
@@ -189,8 +220,6 @@ function wake(){try{if(navigator.wakeLock){navigator.wakeLock.request("screen").
 document.addEventListener("visibilitychange",function(){if(!document.hidden){wake();if(ctx&&ctx.state!=="running")ctx.resume()}});
 $("dn").addEventListener("click",function(){setTone(S.tone-1)});
 $("up").addEventListener("click",function(){setTone(S.tone+1)});
-$("mv").addEventListener("input",function(e){S.mv=+e.target.value;if(master)setMaster()});
-$("mv").addEventListener("change",save);
 $("stop").addEventListener("click",function(){layers.forEach(function(L){if(L.on)stopLayer(L)})});
 $("reset").addEventListener("click",function(){S.l.forEach(function(x){x.br=50});layers.forEach(function(L){applyBr(L);render(L)});save();toast("Brilho de todas as camadas no centro")});
 $("go").addEventListener("click",function(){
@@ -204,7 +233,7 @@ $("go").addEventListener("click",function(){
 fetch("sounds.json").then(function(r){return r.json()}).then(function(j){
   sounds=j;j.forEach(function(m){byId[m.id]=m});load();
   S.l.forEach(function(x){if(!byId[x.snd])x.snd=DEFAULTS[S.l.indexOf(x)]});
-  S.tone=S.tone||0;$("mv").value=S.mv;build();
+  S.tone=S.tone||0;build();
   $("go").disabled=false;
 }).catch(function(e){$("msg").textContent="Não consegui abrir a lista de sons: "+e.message});
 $("go").disabled=true;
