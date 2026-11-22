@@ -1,4 +1,4 @@
-const V="pads-v7";
+const V="pads-v8";
 const SHELL=["./","index.html","sounds.json","manifest.webmanifest","icon-180.png","icon-512.png","start.jpg"];
 const AUDIO=["audio/A01.flac", "audio/A02.flac", "audio/A03.flac", "audio/A04.flac", "audio/A05.flac", "audio/A06.flac", "audio/A07.flac", "audio/A08.flac", "audio/A09.flac", "audio/A10.flac", "audio/A11.flac", "audio/A12.flac", "audio/A13.flac", "audio/A14.flac", "audio/A15.flac", "audio/A16.flac", "audio/A17.flac", "audio/A18.flac", "audio/A19.flac", "audio/A20.flac", "audio/B01.flac", "audio/B02.flac", "audio/B03.flac", "audio/B04.flac", "audio/B05.flac", "audio/B06.flac", "audio/B07.flac", "audio/B08.flac", "audio/C_FB_Tierra_del_Fuego-60-C3-RLGJ.flac", "audio/C_Saltbek_Strand-48-C2-JX3S.flac"];
 self.addEventListener("install",e=>{e.waitUntil((async()=>{const c=await caches.open(V);

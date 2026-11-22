@@ -105,9 +105,30 @@ html,body{background:#030c24}
 .row.sel{background:rgba(50,110,190,.35)}
 .row .pv{background:rgba(50,110,190,.45);color:#eaf4ff}.row .use{background:#8fd6ff;color:#06204a}
 .x{background:rgba(50,110,190,.45);color:#eaf4ff}
+
+/* ===== responsivo ===== */
+body.intro #app{visibility:hidden}
+#start{background:transparent}
+#start .art{width:min(100vw,calc(100vh*2.1617))}
+@media (max-aspect-ratio:21/10){#start .art{-webkit-mask-image:linear-gradient(transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(transparent,#000 6%,#000 94%,transparent)}}
+@media (max-aspect-ratio:1/1){#start .art{width:118vw;flex:0 0 auto}}
+.kb{container-type:size}
+.knob{width:min(86%,19vh,150px);width:min(86%,calc(100cqh - 16px),150px)}
+.knob{container-type:inline-size}
+.knob .v{font-size:13px;font-size:max(12px,24cqw)}
+.ch .nm{font-size:clamp(10px,min(1.9vh,1.5vw),17px);min-height:2.4em}
+.ch .num{font-size:clamp(9px,1.4vh,13px)}
+.lbl{font-size:clamp(7px,min(1.5vh,1.1vw),12px)}
+.tg{height:clamp(30px,6vh,54px);font-size:clamp(10px,min(2.2vh,3.1vw),17px);letter-spacing:.03em;padding:0}
+.snd{font-size:clamp(9px,1.6vh,13px)}
+.ch.master .mv{font-size:clamp(13px,2.6vh,22px)}
+.tone button,.stop,.cfg{height:clamp(38px,7vh,58px)}
+.tone .n b{font-size:clamp(22px,4.4vh,40px)}
+.stop{font-size:clamp(11px,1.9vh,16px)}
+@media (max-height:430px){.tg{height:32px}.ch .nm{min-height:2.2em}}
 </style>
 </head>
-<body>
+<body class="intro">
 <div id="start"><div class="art" role="img" aria-label="Pad Worship Contínuo">
   <button id="go" aria-label="Começar"></button>
   <div id="prog"><i></i></div>
@@ -282,7 +303,7 @@ $("go").addEventListener("click",function(){
   initAudio();ctx.resume();wake();
   var need=[];S.l.forEach(function(x){if(need.indexOf(x.snd)<0)need.push(x.snd)});
   var done=0;Promise.all(need.map(function(id){return getBuf(id).then(function(){done++;$("prog").firstChild.style.width=(done/need.length*100)+"%"})}))
-   .then(function(){$("start").style.display="none"})
+   .then(function(){$("start").style.display="none";document.body.classList.remove("intro")})
    .catch(function(e){started=false;$("go").disabled=false;$("go").textContent="Tentar de novo";$("msg").textContent="Não consegui carregar os sons ("+e.message+"). Confira a internet e tente de novo."});
 });
 fetch("sounds.json").then(function(r){return r.json()}).then(function(j){
